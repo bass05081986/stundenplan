@@ -505,7 +505,7 @@
   <div class="board">
     <div class="board-head">
       <div class="eyebrow">
-        <span>Stundentafel · Beispielwoche</span>
+        <span>Stundentafel</span>
         <span class="clock" id="clock">--:--:--</span>
       </div>
       <div class="day-line">
@@ -524,7 +524,6 @@
     </div>
 
     <div id="agendaWrap"></div>
-    <div class="foot">Beispieldaten — ersetze sie durch deinen eigenen Plan</div>
   </div>
 
   <div class="event-card" id="eventCard"></div>
@@ -564,38 +563,52 @@
     "Kunst":"var(--c-kunst)",
     "Biologie":"var(--c-biologie)",
     "Musik":"var(--c-musik)",
-    "Ethik":"var(--c-ethik)"
+    "Ethik":"var(--c-ethik)",
+    "Religion":"#A67C52",
+    "Französisch":"#4A7FA5",
+    "Schwimmen":"#52B3C4",
+    "Biologie/Physik":"var(--c-physik)",
+    "Musik/Informatik":"var(--c-musik)"
   };
 
+  // Schulbeginn 7:50 · 45-Min-Stunden · 5 Min Pause zwischen den Stunden,
+  // 15 Min nach Stunde 2, 20 Min nach Stunde 4, Mittagspause (50 Min) liegt auf Stunde 7.
   var SCHEDULE = [
     [ // Montag
-      ["08:00","09:30","Mathematik","Raum 204 · Hr. Bauer"],
-      ["09:45","11:15","Englisch","Raum 108 · Fr. Klein"],
-      ["11:30","12:15","Sport","Halle 2 · Hr. Nowak"],
-      ["13:00","14:30","Informatik","Raum PC1 · Fr. Vogel"]
+      ["07:50","08:35","FD","Weh"],
+      ["08:40","09:25","Religion","Kru"],
+      ["09:40","11:15","Deutsch",""],
+      ["11:35","13:10","Mathematik",""],
+      ["14:00","14:45","LAZ","Kru"]
     ],
     [ // Dienstag
-      ["08:00","09:30","Deutsch","Raum 112 · Fr. Schmidt"],
-      ["09:45","11:15","Physik","Raum 301 · Hr. Roth"],
-      ["11:30","13:00","Chemie","Raum 305 · Fr. Wagner"],
-      ["13:15","14:00","Geschichte","Raum 110 · Hr. Fischer"]
+      ["07:50","09:25","Kunst",""],
+      ["09:40","10:25","Deutsch",""],
+      ["10:30","11:15","Englisch",""],
+      ["11:35","13:10","Geschichte","Engel"]
     ],
     [ // Mittwoch
-      ["08:00","09:30","Mathematik","Raum 204 · Hr. Bauer"],
-      ["09:45","10:30","Kunst","Atelier · Fr. Berg"],
-      ["10:45","12:15","Englisch","Raum 108 · Fr. Klein"],
-      ["13:00","14:30","Biologie","Raum 302 · Hr. Wolf"]
+      ["07:50","08:35","Biologie/Physik","Engel"],
+      ["08:40","09:25","Deutsch",""],
+      ["09:40","11:15","Englisch",""],
+      ["11:35","12:20","Mathematik",""],
+      ["12:25","13:10","Religion",""],
+      ["14:00","14:45","AG",""]
     ],
     [ // Donnerstag
-      ["08:00","09:30","Deutsch","Raum 112 · Fr. Schmidt"],
-      ["09:45","11:15","Sport","Halle 1 · Hr. Nowak"],
-      ["11:30","13:00","Mathematik","Raum 204 · Hr. Bauer"],
-      ["13:15","14:45","Musik","Musiksaal · Fr. Adler"]
+      ["07:50","08:35","Biologie/Physik",""],
+      ["08:40","09:25","Französisch","Fr. Wattenberg"],
+      ["09:40","11:15","Musik/Informatik","Herr Domin"],
+      ["11:35","13:10","Schwimmen",""],
+      ["14:00","14:45","KLS",""]
     ],
     [ // Freitag
-      ["08:00","09:30","Physik","Raum 301 · Hr. Roth"],
-      ["09:45","11:15","Informatik","Raum PC1 · Fr. Vogel"],
-      ["11:30","12:15","Ethik","Raum 115 · Hr. Krause"]
+      ["07:50","08:35","Englisch",""],
+      ["08:40","09:25","Sport",""],
+      ["09:40","10:25","Mathematik",""],
+      ["10:30","11:15","FM",""],
+      ["11:35","12:20","Französisch",""],
+      ["12:25","13:10","FE",""]
     ]
   ];
 
@@ -985,12 +998,13 @@
         tag.textContent = 'JETZT';
         subjEl.appendChild(tag);
       }
-      var metaEl = document.createElement('div');
-      metaEl.className = 'slot-meta';
-      metaEl.textContent = meta;
-
       body.appendChild(subjEl);
-      body.appendChild(metaEl);
+      if(meta){
+        var metaEl = document.createElement('div');
+        metaEl.className = 'slot-meta';
+        metaEl.textContent = meta;
+        body.appendChild(metaEl);
+      }
       row.appendChild(timeEl);
       row.appendChild(bar);
       row.appendChild(body);
