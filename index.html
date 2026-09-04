@@ -457,7 +457,7 @@
   <div class="event-card" id="eventCard"></div>
 
   <div class="newsfeed">
-    <div class="newsfeed-label">Ticker · Beispiel-Feed</div>
+    <div class="newsfeed-label">Ticker · Bundesliga live + Beispiel</div>
     <div class="ticker"><div class="ticker-track" id="tickerTrack"></div></div>
   </div>
 </div>
@@ -556,15 +556,57 @@
   };
   function iconFor(name){ return ICONS[name] || "📅"; }
 
-  // Beispiel-Ticker — ersetze die Einträge durch deine eigenen (z.B. per RSS/API)
-  var NEWS = [
-    "⚽ FC Bayern München — nächstes Bundesliga-Spiel",
-    "⚽ Arminia Bielefeld — aktueller Tabellenplatz",
+  // Statische Ticker-Einträge — ersetze sie durch deine eigenen
+  var STATIC_NEWS = [
     "🎮 Neue Konsolenspiele diese Woche (PS5 / Switch / Xbox)",
     "🧱 Minecraft-Update bringt neues Biom",
     "🏆 Champions League: Achtelfinale ausgelost",
     "🎥 Neues Video von deinem Lieblings-Creator"
   ];
+
+  // Live-Bundesliga-Daten über die kostenlose OpenLigaDB-API (kein Key nötig)
+  var LIVE_TEAMS = [
+    { league:"bl1", match:"Bayern München" },
+    { league:"bl2", match:"Bielefeld" }
+  ];
+
+  function formatMatchLine(m, teamMatch){
+    var isTeam1 = m.team1.teamName.indexOf(teamMatch) !== -1;
+    var us = isTeam1 ? m.team1 : m.team2;
+    var opp = isTeam1 ? m.team2 : m.team1;
+    var usName = us.shortName || us.teamName;
+    var oppName = opp.shortName || opp.teamName;
+
+    if(m.matchIsFinished && m.matchResults && m.matchResults.length){
+      var final = m.matchResults.filter(function(r){ return r.resultTypeID === 2; })[0] || m.matchResults[m.matchResults.length-1];
+      var usScore = isTeam1 ? final.pointsTeam1 : final.pointsTeam2;
+      var oppScore = isTeam1 ? final.pointsTeam2 : final.pointsTeam1;
+      return '⚽ ' + usName + ' ' + usScore + ':' + oppScore + ' ' + oppName + ' — Endstand';
+    }
+    var d = new Date(m.matchDateTime);
+    var dateStr = pad(d.getDate()) + '.' + pad(d.getMonth()+1) + '.';
+    var timeStr = pad(d.getHours()) + ':' + pad(d.getMinutes());
+    return '⚽ ' + usName + ' vs ' + oppName + ' — ' + dateStr + ' ' + timeStr + ' Uhr';
+  }
+
+  function fetchLiveMatch(team){
+    return fetch('https://api.openligadb.de/getmatchdata/' + team.league)
+      .then(function(r){ return r.json(); })
+      .then(function(matches){
+        var m = matches.filter(function(x){
+          return x.team1.teamName.indexOf(team.match) !== -1 || x.team2.teamName.indexOf(team.match) !== -1;
+        })[0];
+        return m ? formatMatchLine(m, team.match) : null;
+      })
+      .catch(function(){ return null; });
+  }
+
+  function updateLiveTicker(){
+    Promise.all(LIVE_TEAMS.map(fetchLiveMatch)).then(function(results){
+      var live = results.filter(Boolean);
+      renderTicker(live.concat(STATIC_NEWS));
+    });
+  }
 
   function isoIndex(d){ return (d.getDay()+6)%7; } // 0=Mo .. 6=So
   function isWeekend(d){ return isoIndex(d) >= 5; }
@@ -679,8 +721,8 @@
       '</div>';
   }
 
-  function renderTicker(){
-    var doubled = NEWS.concat(NEWS);
+  function renderTicker(items){
+    var doubled = items.concat(items);
     tickerTrackEl.innerHTML = doubled.map(function(n){
       return '<span class="ticker-item">' + n + '</span>';
     }).join('<span class="ticker-item" aria-hidden="true">·</span>');
@@ -840,7 +882,9 @@
     else render();
   }, 30000);
 
-  renderTicker();
+  renderTicker(["⚽ Lade Bundesliga-Daten …"].concat(STATIC_NEWS));
+  updateLiveTicker();
+  setInterval(updateLiveTicker, 5 * 60 * 1000); // alle 5 Minuten aktualisieren
   renderEventCard();
   render();
 })();
