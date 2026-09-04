@@ -130,6 +130,17 @@
     border-radius:3px;
     align-self:center;
   }
+  .kw-tag{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:10.5px;
+    letter-spacing:.08em;
+    text-transform:uppercase;
+    color:var(--flap-text-dim);
+    border:1px solid var(--rule);
+    padding:3px 8px;
+    border-radius:3px;
+    align-self:center;
+  }
 
   .switcher{
     display:flex;
@@ -427,6 +438,7 @@
       <div class="day-line">
         <span class="day-name" id="dayName">—</span>
         <span class="day-date" id="dayDate">—</span>
+        <span class="kw-tag" id="kwTag">—</span>
         <span class="today-tag" id="todayTag" hidden>Heute</span>
       </div>
     </div>
@@ -566,6 +578,21 @@
   function ymd(d){ return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate()); }
   function parseYmd(s){ var p=s.split('-'); return new Date(+p[0], +p[1]-1, +p[2]); }
 
+  // ISO-8601-Kalenderwoche
+  function isoWeek(d){
+    var date = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+    var dayNum = (date.getUTCDay() + 6) % 7;
+    date.setUTCDate(date.getUTCDate() - dayNum + 3);
+    var firstThursday = new Date(Date.UTC(date.getUTCFullYear(), 0, 4));
+    var firstDayNum = (firstThursday.getUTCDay() + 6) % 7;
+    firstThursday.setUTCDate(firstThursday.getUTCDate() - firstDayNum + 3);
+    return 1 + Math.round((date - firstThursday) / (7 * 86400000));
+  }
+  // Umgangsregelung: gerade KW = Mama, ungerade KW = Papa
+  function custodyFor(d){
+    return (isoWeek(d) % 2 === 0) ? 'Mama' : 'Papa';
+  }
+
   function findFeiertag(d){
     var key = ymd(d);
     for(var i=0;i<FEIERTAGE.length;i++){
@@ -601,6 +628,7 @@
   var dayNameEl = document.getElementById('dayName');
   var dayDateEl = document.getElementById('dayDate');
   var todayTagEl = document.getElementById('todayTag');
+  var kwTagEl = document.getElementById('kwTag');
   var agendaWrap = document.getElementById('agendaWrap');
   var heuteBtn = document.getElementById('heuteBtn');
   var clockEl = document.getElementById('clock');
@@ -687,6 +715,7 @@
 
     dayNameEl.textContent = DAYS[idx];
     dayDateEl.textContent = fmtDate(viewDate);
+    kwTagEl.textContent = 'KW ' + isoWeek(viewDate) + ' · bei ' + custodyFor(viewDate);
     todayTagEl.hidden = !isToday;
     heuteBtn.hidden = (offset === defaultOffset());
 
