@@ -457,7 +457,7 @@
   <div class="event-card" id="eventCard"></div>
 
   <div class="newsfeed">
-    <div class="newsfeed-label">Ticker · Bundesliga live + Beispiel</div>
+    <div class="newsfeed-label">Ticker · Bundesliga live + logo!-Nachrichten (ZDF)</div>
     <div class="ticker"><div class="ticker-track" id="tickerTrack"></div></div>
   </div>
 </div>
@@ -556,14 +556,6 @@
   };
   function iconFor(name){ return ICONS[name] || "📅"; }
 
-  // Statische Ticker-Einträge — ersetze sie durch deine eigenen
-  var STATIC_NEWS = [
-    "🎮 Neue Konsolenspiele diese Woche (PS5 / Switch / Xbox)",
-    "🧱 Minecraft-Update bringt neues Biom",
-    "🏆 Champions League: Achtelfinale ausgelost",
-    "🎥 Neues Video von deinem Lieblings-Creator"
-  ];
-
   // Live-Bundesliga-Daten über die kostenlose OpenLigaDB-API (kein Key nötig)
   var LIVE_TEAMS = [
     { league:"bl1", match:"Bayern München" },
@@ -601,10 +593,31 @@
       .catch(function(){ return null; });
   }
 
+  // Kindernachrichten "logo!" (ZDF) über einen RSS→JSON-Proxy mit CORS-Unterstützung
+  var LOGO_FEED = 'https://www.zdf.de/rss/podcast/video/zdf/kinder/logo';
+
+  function fetchLogoNews(){
+    var url = 'https://api.rss2json.com/v1/api.json?rss_url=' + encodeURIComponent(LOGO_FEED);
+    return fetch(url)
+      .then(function(r){ return r.json(); })
+      .then(function(data){
+        if(!data.items || !data.items.length) return [];
+        var desc = (data.items[0].description || '').replace(/^Die Themen:\s*/, '');
+        var topics = desc.split(/\s-\s*Moderation:/)[0];
+        return topics.split('/').map(function(s){ return s.trim(); }).filter(Boolean).map(function(t){
+          return '📰 ' + t;
+        });
+      })
+      .catch(function(){ return []; });
+  }
+
   function updateLiveTicker(){
-    Promise.all(LIVE_TEAMS.map(fetchLiveMatch)).then(function(results){
-      var live = results.filter(Boolean);
-      renderTicker(live.concat(STATIC_NEWS));
+    Promise.all([
+      Promise.all(LIVE_TEAMS.map(fetchLiveMatch)).then(function(r){ return r.filter(Boolean); }),
+      fetchLogoNews()
+    ]).then(function(results){
+      var items = results[0].concat(results[1]);
+      renderTicker(items.length ? items : ['Ticker gerade nicht erreichbar']);
     });
   }
 
@@ -882,7 +895,7 @@
     else render();
   }, 30000);
 
-  renderTicker(["⚽ Lade Bundesliga-Daten …"].concat(STATIC_NEWS));
+  renderTicker(["Lade Ticker-Daten …"]);
   updateLiveTicker();
   setInterval(updateLiveTicker, 5 * 60 * 1000); // alle 5 Minuten aktualisieren
   renderEventCard();
