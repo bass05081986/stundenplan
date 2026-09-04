@@ -1,0 +1,518 @@
+<title>Stundentafel</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Condensed:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+
+<style>
+  :root{
+    --bg: #E7EAEF;
+    --frame: #D3D8E0;
+    --board-bg: #12141c;
+    --board-bg-raised: #1b1f2a;
+    --board-edge: #060709;
+    --flap-text: #f2ede1;
+    --flap-text-dim: #8891a3;
+    --flap-text-faint: #565f70;
+    --amber: #f2a63d;
+    --amber-dim: #7a5b26;
+    --rule: rgba(242,237,225,0.09);
+    --shadow: rgba(15,17,23,0.35);
+
+    --c-mathematik:#6FA8DC;
+    --c-englisch:#E2708A;
+    --c-deutsch:#C9A0DC;
+    --c-physik:#6FD1B0;
+    --c-sport:#9BC53D;
+    --c-informatik:#E8A33D;
+    --c-chemie:#4FB8D9;
+    --c-geschichte:#C08552;
+    --c-kunst:#D9C24E;
+    --c-biologie:#67BF6B;
+    --c-musik:#8B6FD6;
+    --c-ethik:#8D97A5;
+  }
+
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg: #05060a;
+      --frame: #0c0e14;
+      --shadow: rgba(0,0,0,0.6);
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg: #05060a;
+    --frame: #0c0e14;
+    --shadow: rgba(0,0,0,0.6);
+  }
+
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--bg);
+    color:var(--flap-text);
+    font-family:'IBM Plex Sans', system-ui, sans-serif;
+    min-height:100%;
+    display:flex;
+    justify-content:center;
+    padding:clamp(16px,4vw,48px) 16px;
+  }
+
+  .frame{
+    width:100%;
+    max-width:640px;
+    background:var(--frame);
+    border-radius:18px;
+    padding:clamp(10px,2.4vw,20px);
+    box-shadow:0 30px 60px -20px var(--shadow);
+  }
+
+  .board{
+    background:var(--board-bg);
+    border:1px solid var(--board-edge);
+    border-radius:10px;
+    overflow:hidden;
+  }
+
+  .board-head{
+    padding:22px clamp(16px,4vw,28px) 16px;
+    border-bottom:1px solid var(--rule);
+  }
+
+  .eyebrow{
+    display:flex;
+    align-items:baseline;
+    justify-content:space-between;
+    font-family:'IBM Plex Mono', monospace;
+    font-size:11px;
+    letter-spacing:.14em;
+    text-transform:uppercase;
+    color:var(--flap-text-dim);
+    margin-bottom:10px;
+  }
+  .eyebrow .clock{
+    font-variant-numeric:tabular-nums;
+    color:var(--flap-text-dim);
+  }
+
+  .day-line{
+    display:flex;
+    align-items:baseline;
+    gap:14px;
+    flex-wrap:wrap;
+  }
+  .day-name{
+    font-family:'IBM Plex Sans Condensed',sans-serif;
+    font-weight:700;
+    font-size:clamp(30px,7vw,42px);
+    letter-spacing:.01em;
+    text-transform:uppercase;
+    line-height:1;
+    text-wrap:balance;
+  }
+  .day-date{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:14px;
+    color:var(--flap-text-dim);
+  }
+  .today-tag{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:10px;
+    letter-spacing:.14em;
+    text-transform:uppercase;
+    color:var(--board-bg);
+    background:var(--amber);
+    padding:3px 8px;
+    border-radius:3px;
+    align-self:center;
+  }
+
+  .switcher{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    padding:14px clamp(12px,3.5vw,24px);
+    border-bottom:1px solid var(--rule);
+  }
+  .nav-btn{
+    flex:none;
+    width:32px;height:32px;
+    border-radius:6px;
+    border:1px solid var(--rule);
+    background:transparent;
+    color:var(--flap-text-dim);
+    cursor:pointer;
+    display:flex;align-items:center;justify-content:center;
+    font-size:16px;
+    transition:background .15s ease, color .15s ease;
+  }
+  .nav-btn:hover{ background:var(--board-bg-raised); color:var(--flap-text); }
+  .nav-btn:focus-visible{ outline:2px solid var(--amber); outline-offset:2px; }
+
+  .tabs{
+    flex:1;
+    display:grid;
+    grid-template-columns:repeat(7,1fr);
+    gap:4px;
+  }
+  .tab{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:12px;
+    letter-spacing:.06em;
+    text-transform:uppercase;
+    text-align:center;
+    padding:8px 2px;
+    border-radius:5px;
+    border:1px solid transparent;
+    background:transparent;
+    color:var(--flap-text-faint);
+    cursor:pointer;
+    transition:background .15s ease, color .15s ease, border-color .15s ease;
+  }
+  .tab:hover{ color:var(--flap-text); }
+  .tab:focus-visible{ outline:2px solid var(--amber); outline-offset:1px; }
+  .tab.is-weekend{ color:var(--flap-text-faint); }
+  .tab.is-active{
+    background:var(--amber);
+    color:var(--board-bg);
+    font-weight:600;
+  }
+  .tab.is-today:not(.is-active){
+    border-color:var(--amber-dim);
+    color:var(--amber);
+  }
+
+  .heute-btn{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11px;
+    letter-spacing:.08em;
+    text-transform:uppercase;
+    color:var(--board-bg);
+    background:var(--amber);
+    border:none;
+    border-radius:6px;
+    padding:0 12px;
+    height:32px;
+    cursor:pointer;
+    white-space:nowrap;
+  }
+  .heute-btn:focus-visible{ outline:2px solid var(--flap-text); outline-offset:2px; }
+  .heute-btn[hidden]{ display:none; }
+
+  .agenda{
+    padding:8px clamp(10px,3vw,20px) 18px;
+  }
+  .slot{
+    display:grid;
+    grid-template-columns:76px 4px 1fr;
+    gap:0 14px;
+    align-items:stretch;
+    padding:13px 6px;
+    border-bottom:1px solid var(--rule);
+    animation:rise .28s ease both;
+  }
+  .slot:last-child{ border-bottom:none; }
+
+  @keyframes rise{
+    from{ opacity:0; transform:translateY(4px); }
+    to{ opacity:1; transform:translateY(0); }
+  }
+  @media (prefers-reduced-motion: reduce){
+    .slot{ animation:none; }
+  }
+
+  .slot-time{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:12.5px;
+    color:var(--flap-text-dim);
+    line-height:1.3;
+    font-variant-numeric:tabular-nums;
+    align-self:center;
+  }
+  .slot-time .end{ color:var(--flap-text-faint); }
+
+  .slot-bar{
+    border-radius:3px;
+    background:var(--bar-color, var(--flap-text-faint));
+  }
+
+  .slot-body{
+    align-self:center;
+    min-width:0;
+  }
+  .slot-subject{
+    font-weight:600;
+    font-size:15px;
+    color:var(--flap-text);
+  }
+  .slot-meta{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11.5px;
+    color:var(--flap-text-dim);
+    margin-top:2px;
+  }
+
+  .slot.is-now{
+    background:var(--board-bg-raised);
+    border-radius:7px;
+    box-shadow:inset 0 0 0 1px var(--amber-dim);
+  }
+  .now-tag{
+    display:inline-block;
+    font-family:'IBM Plex Mono',monospace;
+    font-size:10px;
+    letter-spacing:.12em;
+    color:var(--amber);
+    border:1px solid var(--amber-dim);
+    border-radius:3px;
+    padding:1px 5px;
+    margin-left:8px;
+    vertical-align:1px;
+  }
+
+  .empty{
+    padding:44px 20px 52px;
+    text-align:center;
+  }
+  .empty-title{
+    font-family:'IBM Plex Sans Condensed',sans-serif;
+    font-weight:600;
+    font-size:20px;
+    color:var(--flap-text);
+    margin-bottom:6px;
+  }
+  .empty-sub{
+    font-size:13px;
+    color:var(--flap-text-dim);
+    max-width:36ch;
+    margin:0 auto;
+  }
+
+  .foot{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:10.5px;
+    letter-spacing:.06em;
+    color:var(--flap-text-faint);
+    text-align:center;
+    padding:12px 12px 4px;
+  }
+
+  @media (max-width:380px){
+    .tab{ font-size:10.5px; padding:8px 0; }
+    .slot{ grid-template-columns:60px 3px 1fr; }
+  }
+</style>
+
+<div class="frame">
+  <div class="board">
+    <div class="board-head">
+      <div class="eyebrow">
+        <span>Stundentafel · Beispielwoche</span>
+        <span class="clock" id="clock">--:--:--</span>
+      </div>
+      <div class="day-line">
+        <span class="day-name" id="dayName">—</span>
+        <span class="day-date" id="dayDate">—</span>
+        <span class="today-tag" id="todayTag" hidden>Heute</span>
+      </div>
+    </div>
+
+    <div class="switcher">
+      <button class="nav-btn" id="prevBtn" aria-label="Vorheriger Tag">‹</button>
+      <div class="tabs" id="tabs"></div>
+      <button class="nav-btn" id="nextBtn" aria-label="Nächster Tag">›</button>
+      <button class="heute-btn" id="heuteBtn">Heute</button>
+    </div>
+
+    <div id="agendaWrap"></div>
+    <div class="foot">Beispieldaten — ersetze sie durch deinen eigenen Plan</div>
+  </div>
+</div>
+
+<script>
+(function(){
+  var DAYS = ["Montag","Dienstag","Mittwoch","Donnerstag","Freitag","Samstag","Sonntag"];
+  var DAYS_SHORT = ["Mo","Di","Mi","Do","Fr","Sa","So"];
+
+  var COLORS = {
+    "Mathematik":"var(--c-mathematik)",
+    "Englisch":"var(--c-englisch)",
+    "Deutsch":"var(--c-deutsch)",
+    "Physik":"var(--c-physik)",
+    "Sport":"var(--c-sport)",
+    "Informatik":"var(--c-informatik)",
+    "Chemie":"var(--c-chemie)",
+    "Geschichte":"var(--c-geschichte)",
+    "Kunst":"var(--c-kunst)",
+    "Biologie":"var(--c-biologie)",
+    "Musik":"var(--c-musik)",
+    "Ethik":"var(--c-ethik)"
+  };
+
+  var SCHEDULE = [
+    [ // Montag
+      ["08:00","09:30","Mathematik","Raum 204 · Hr. Bauer"],
+      ["09:45","11:15","Englisch","Raum 108 · Fr. Klein"],
+      ["11:30","12:15","Sport","Halle 2 · Hr. Nowak"],
+      ["13:00","14:30","Informatik","Raum PC1 · Fr. Vogel"]
+    ],
+    [ // Dienstag
+      ["08:00","09:30","Deutsch","Raum 112 · Fr. Schmidt"],
+      ["09:45","11:15","Physik","Raum 301 · Hr. Roth"],
+      ["11:30","13:00","Chemie","Raum 305 · Fr. Wagner"],
+      ["13:15","14:00","Geschichte","Raum 110 · Hr. Fischer"]
+    ],
+    [ // Mittwoch
+      ["08:00","09:30","Mathematik","Raum 204 · Hr. Bauer"],
+      ["09:45","10:30","Kunst","Atelier · Fr. Berg"],
+      ["10:45","12:15","Englisch","Raum 108 · Fr. Klein"],
+      ["13:00","14:30","Biologie","Raum 302 · Hr. Wolf"]
+    ],
+    [ // Donnerstag
+      ["08:00","09:30","Deutsch","Raum 112 · Fr. Schmidt"],
+      ["09:45","11:15","Sport","Halle 1 · Hr. Nowak"],
+      ["11:30","13:00","Mathematik","Raum 204 · Hr. Bauer"],
+      ["13:15","14:45","Musik","Musiksaal · Fr. Adler"]
+    ],
+    [ // Freitag
+      ["08:00","09:30","Physik","Raum 301 · Hr. Roth"],
+      ["09:45","11:15","Informatik","Raum PC1 · Fr. Vogel"],
+      ["11:30","12:15","Ethik","Raum 115 · Hr. Krause"]
+    ],
+    [], // Samstag
+    []  // Sonntag
+  ];
+
+  function isoIndex(d){ return (d.getDay()+6)%7; } // 0=Mo .. 6=So
+  function addDays(d,n){ var r=new Date(d); r.setDate(r.getDate()+n); return r; }
+  function sameDate(a,b){ return a.getFullYear()===b.getFullYear() && a.getMonth()===b.getMonth() && a.getDate()===b.getDate(); }
+  function fmtDate(d){
+    return d.toLocaleDateString('de-DE',{ day:'numeric', month:'long' });
+  }
+  function pad(n){ return n<10 ? '0'+n : ''+n; }
+  function toMinutes(hhmm){ var p=hhmm.split(':'); return (+p[0])*60 + (+p[1]); }
+
+  var today = new Date();
+  var offset = 0; // days from today
+
+  var tabsEl = document.getElementById('tabs');
+  var dayNameEl = document.getElementById('dayName');
+  var dayDateEl = document.getElementById('dayDate');
+  var todayTagEl = document.getElementById('todayTag');
+  var agendaWrap = document.getElementById('agendaWrap');
+  var heuteBtn = document.getElementById('heuteBtn');
+  var clockEl = document.getElementById('clock');
+
+  function buildTabs(viewDate){
+    tabsEl.innerHTML = '';
+    var weekStart = addDays(viewDate, -isoIndex(viewDate));
+    for(var i=0;i<7;i++){
+      var d = addDays(weekStart, i);
+      var btn = document.createElement('button');
+      btn.className = 'tab';
+      btn.type = 'button';
+      if(i>=5) btn.classList.add('is-weekend');
+      if(sameDate(d, today)) btn.classList.add('is-today');
+      if(sameDate(d, viewDate)) btn.classList.add('is-active');
+      btn.textContent = DAYS_SHORT[i];
+      btn.setAttribute('aria-label', DAYS[i] + ', ' + fmtDate(d));
+      (function(delta){
+        btn.addEventListener('click', function(){
+          offset = offset + delta;
+          render();
+        });
+      })(Math.round((d - today) / 86400000));
+      tabsEl.appendChild(btn);
+    }
+  }
+
+  function render(){
+    var viewDate = addDays(today, offset);
+    var idx = isoIndex(viewDate);
+    var isToday = sameDate(viewDate, today);
+
+    dayNameEl.textContent = DAYS[idx];
+    dayDateEl.textContent = fmtDate(viewDate);
+    todayTagEl.hidden = !isToday;
+    heuteBtn.hidden = isToday;
+
+    buildTabs(viewDate);
+
+    var periods = SCHEDULE[idx];
+    agendaWrap.innerHTML = '';
+
+    if(!periods || periods.length === 0){
+      var empty = document.createElement('div');
+      empty.className = 'empty';
+      empty.innerHTML =
+        '<div class="empty-title">Kein Unterricht</div>' +
+        '<div class="empty-sub">An diesem Tag stehen keine Stunden im Plan.</div>';
+      agendaWrap.appendChild(empty);
+      return;
+    }
+
+    var agenda = document.createElement('div');
+    agenda.className = 'agenda';
+    var nowMin = isToday ? (new Date().getHours()*60 + new Date().getMinutes()) : -1;
+
+    periods.forEach(function(p){
+      var start = p[0], end = p[1], subject = p[2], meta = p[3];
+      var isNow = isToday && nowMin >= toMinutes(start) && nowMin < toMinutes(end);
+
+      var row = document.createElement('div');
+      row.className = 'slot' + (isNow ? ' is-now' : '');
+
+      var timeEl = document.createElement('div');
+      timeEl.className = 'slot-time';
+      timeEl.innerHTML = start + '<br><span class="end">' + end + '</span>';
+
+      var bar = document.createElement('div');
+      bar.className = 'slot-bar';
+      bar.style.setProperty('--bar-color', COLORS[subject] || 'var(--flap-text-faint)');
+
+      var body = document.createElement('div');
+      body.className = 'slot-body';
+      var subjEl = document.createElement('div');
+      subjEl.className = 'slot-subject';
+      subjEl.textContent = subject;
+      if(isNow){
+        var tag = document.createElement('span');
+        tag.className = 'now-tag';
+        tag.textContent = 'JETZT';
+        subjEl.appendChild(tag);
+      }
+      var metaEl = document.createElement('div');
+      metaEl.className = 'slot-meta';
+      metaEl.textContent = meta;
+
+      body.appendChild(subjEl);
+      body.appendChild(metaEl);
+      row.appendChild(timeEl);
+      row.appendChild(bar);
+      row.appendChild(body);
+      agenda.appendChild(row);
+    });
+
+    agendaWrap.appendChild(agenda);
+  }
+
+  document.getElementById('prevBtn').addEventListener('click', function(){ offset--; render(); });
+  document.getElementById('nextBtn').addEventListener('click', function(){ offset++; render(); });
+  heuteBtn.addEventListener('click', function(){ offset = 0; render(); });
+
+  function tickClock(){
+    var n = new Date();
+    clockEl.textContent = pad(n.getHours())+':'+pad(n.getMinutes())+':'+pad(n.getSeconds());
+  }
+  tickClock();
+  setInterval(tickClock, 1000);
+
+  // keep "today" and the now-highlight fresh if the page stays open past midnight
+  setInterval(function(){
+    var n = new Date();
+    if(!sameDate(n, today)){ today = n; render(); }
+    else render();
+  }, 30000);
+
+  render();
+})();
+</script>
