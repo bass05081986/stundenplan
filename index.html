@@ -330,6 +330,85 @@
     padding:12px 12px 4px;
   }
 
+  .event-card{
+    display:flex;
+    align-items:center;
+    gap:16px;
+    background:var(--board-bg);
+    border:1px solid var(--board-edge);
+    border-radius:10px;
+    padding:16px 20px;
+    margin-top:12px;
+  }
+  .event-icon{
+    font-size:32px;
+    line-height:1;
+    flex:none;
+  }
+  .event-body{ min-width:0; }
+  .event-eyebrow{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:10px;
+    letter-spacing:.14em;
+    text-transform:uppercase;
+    color:var(--flap-text-faint);
+    margin-bottom:2px;
+  }
+  .event-title{
+    font-family:'IBM Plex Sans Condensed',sans-serif;
+    font-weight:600;
+    font-size:17px;
+    color:var(--flap-text);
+  }
+  .event-sub{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:12px;
+    color:var(--amber);
+    margin-top:2px;
+  }
+
+  .newsfeed{
+    margin-top:12px;
+    background:var(--board-bg);
+    border:1px solid var(--board-edge);
+    border-radius:10px;
+    padding:12px 0 10px;
+  }
+  .newsfeed-label{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:9.5px;
+    letter-spacing:.14em;
+    text-transform:uppercase;
+    color:var(--flap-text-faint);
+    padding:0 20px 8px;
+  }
+  .ticker{
+    overflow:hidden;
+    white-space:nowrap;
+    -webkit-mask-image:linear-gradient(90deg, transparent, #000 24px, #000 calc(100% - 24px), transparent);
+    mask-image:linear-gradient(90deg, transparent, #000 24px, #000 calc(100% - 24px), transparent);
+  }
+  .ticker-track{
+    display:inline-flex;
+    gap:36px;
+    padding-left:36px;
+    animation:ticker 34s linear infinite;
+  }
+  .ticker:hover .ticker-track{ animation-play-state:paused; }
+  .ticker-item{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:12.5px;
+    color:var(--flap-text-dim);
+  }
+  @keyframes ticker{
+    from{ transform:translateX(0); }
+    to{ transform:translateX(-50%); }
+  }
+  @media (prefers-reduced-motion: reduce){
+    .ticker-track{ animation:none; }
+    .ticker{ overflow-x:auto; -webkit-mask-image:none; mask-image:none; }
+  }
+
   @media (max-width:380px){
     .tab{ font-size:10.5px; padding:8px 0; }
     .slot{ grid-template-columns:60px 3px 1fr; }
@@ -361,6 +440,13 @@
 
     <div id="agendaWrap"></div>
     <div class="foot">Beispieldaten — ersetze sie durch deinen eigenen Plan</div>
+  </div>
+
+  <div class="event-card" id="eventCard"></div>
+
+  <div class="newsfeed">
+    <div class="newsfeed-label">Ticker · Beispiel-Feed</div>
+    <div class="ticker"><div class="ticker-track" id="tickerTrack"></div></div>
   </div>
 </div>
 
@@ -439,6 +525,35 @@
     ["Weihnachtsferien","2026-12-23","2027-01-06"]
   ];
 
+  var ICONS = {
+    "Neujahr":"🎆",
+    "Karfreitag":"🐟",
+    "Ostermontag":"🐰",
+    "Tag der Arbeit":"🛠️",
+    "Christi Himmelfahrt":"🍻",
+    "Pfingstmontag":"🕊️",
+    "Fronleichnam":"⛪",
+    "Tag der Deutschen Einheit":"🇩🇪",
+    "Allerheiligen":"🕯️",
+    "1. Weihnachtstag":"🎄",
+    "2. Weihnachtstag":"🎁",
+    "Osterferien":"🐰",
+    "Sommerferien":"🏖️",
+    "Herbstferien":"🎃",
+    "Weihnachtsferien":"🎄"
+  };
+  function iconFor(name){ return ICONS[name] || "📅"; }
+
+  // Beispiel-Ticker — ersetze die Einträge durch deine eigenen
+  var NEWS = [
+    "⚽ Bundesliga: dein Verein gewinnt 3:1",
+    "🎮 Neues Fortnite-Update mit frischen Skins",
+    "🧱 Minecraft-Update bringt neues Biom",
+    "🏆 Champions League: Achtelfinale ausgelost",
+    "🎥 Neues Video von deinem Lieblings-Creator",
+    "🕹️ Nintendo kündigt neues Spiel an"
+  ];
+
   function isoIndex(d){ return (d.getDay()+6)%7; } // 0=Mo .. 6=So
   function isWeekend(d){ return isoIndex(d) >= 5; }
   function addDays(d,n){ var r=new Date(d); r.setDate(r.getDate()+n); return r; }
@@ -489,6 +604,59 @@
   var agendaWrap = document.getElementById('agendaWrap');
   var heuteBtn = document.getElementById('heuteBtn');
   var clockEl = document.getElementById('clock');
+  var eventCardEl = document.getElementById('eventCard');
+  var tickerTrackEl = document.getElementById('tickerTrack');
+
+  function nextEvent(){
+    var t0 = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+    var todayKey = ymd(t0);
+
+    var current = findFerien(t0);
+    if(current){
+      var daysLeft = Math.round((parseYmd(current.end) - t0) / 86400000);
+      return {
+        icon: iconFor(current.name),
+        eyebrow: 'Gerade läuft',
+        title: current.name,
+        sub: daysLeft <= 0 ? 'endet heute' : ('noch ' + daysLeft + (daysLeft === 1 ? ' Tag' : ' Tage') + ' frei')
+      };
+    }
+
+    var candidates = [];
+    FERIEN.forEach(function(f){ if(f[1] >= todayKey) candidates.push({date:f[1], name:f[0]}); });
+    FEIERTAGE.forEach(function(f){ if(f[0] >= todayKey) candidates.push({date:f[0], name:f[1]}); });
+    candidates.sort(function(a,b){ return a.date < b.date ? -1 : (a.date > b.date ? 1 : 0); });
+    if(!candidates.length) return null;
+
+    var next = candidates[0];
+    var days = Math.round((parseYmd(next.date) - t0) / 86400000);
+    return {
+      icon: iconFor(next.name),
+      eyebrow: 'Nächstes Highlight',
+      title: next.name,
+      sub: days === 0 ? 'ist heute!' : ('in ' + days + (days === 1 ? ' Tag' : ' Tagen'))
+    };
+  }
+
+  function renderEventCard(){
+    var ev = nextEvent();
+    if(!ev){ eventCardEl.hidden = true; return; }
+    eventCardEl.hidden = false;
+    eventCardEl.innerHTML =
+      '<div class="event-icon">' + ev.icon + '</div>' +
+      '<div class="event-body">' +
+        '<div class="event-eyebrow">' + ev.eyebrow + '</div>' +
+        '<div class="event-title">' + ev.title + '</div>' +
+        '<div class="event-sub">' + ev.sub + '</div>' +
+      '</div>';
+  }
+
+  function renderTicker(){
+    var doubled = NEWS.concat(NEWS);
+    tickerTrackEl.innerHTML = doubled.map(function(n){
+      return '<span class="ticker-item">' + n + '</span>';
+    }).join('<span class="ticker-item" aria-hidden="true">·</span>');
+  }
 
   function buildTabs(viewDate){
     tabsEl.innerHTML = '';
@@ -639,10 +807,12 @@
   // keep "today" and the now-highlight fresh if the page stays open past midnight
   setInterval(function(){
     var n = new Date();
-    if(!sameDate(n, today)){ today = n; render(); }
+    if(!sameDate(n, today)){ today = n; render(); renderEventCard(); }
     else render();
   }, 30000);
 
+  renderTicker();
+  renderEventCard();
   render();
 })();
 </script>
