@@ -411,6 +411,18 @@
     font-size:12.5px;
     color:var(--flap-text-dim);
   }
+  a.ticker-item{
+    text-decoration:none;
+    transition:color .15s ease;
+  }
+  a.ticker-item:hover{
+    color:var(--amber);
+    text-decoration:underline;
+  }
+  a.ticker-item:focus-visible{
+    outline:2px solid var(--amber);
+    outline-offset:2px;
+  }
   @keyframes ticker{
     from{ transform:translateX(0); }
     to{ transform:translateX(-50%); }
@@ -558,8 +570,8 @@
 
   // Live-Bundesliga-Daten über die kostenlose OpenLigaDB-API (kein Key nötig)
   var LIVE_TEAMS = [
-    { league:"bl1", match:"Bayern München" },
-    { league:"bl2", match:"Bielefeld" }
+    { league:"bl1", match:"Bayern München", url:"https://fcbayern.com/de" },
+    { league:"bl2", match:"Bielefeld", url:"https://www.arminia.de" }
   ];
 
   function formatMatchLine(m, teamMatch){
@@ -588,7 +600,7 @@
         var m = matches.filter(function(x){
           return x.team1.teamName.indexOf(team.match) !== -1 || x.team2.teamName.indexOf(team.match) !== -1;
         })[0];
-        return m ? formatMatchLine(m, team.match) : null;
+        return m ? { text: formatMatchLine(m, team.match), url: team.url } : null;
       })
       .catch(function(){ return null; });
   }
@@ -602,10 +614,11 @@
       .then(function(r){ return r.json(); })
       .then(function(data){
         if(!data.items || !data.items.length) return [];
-        var desc = (data.items[0].description || '').replace(/^Die Themen:\s*/, '');
+        var episode = data.items[0];
+        var desc = (episode.description || '').replace(/^Die Themen:\s*/, '');
         var topics = desc.split(/\s-\s*Moderation:/)[0];
         return topics.split('/').map(function(s){ return s.trim(); }).filter(Boolean).map(function(t){
-          return '📰 ' + t;
+          return { text: '📰 ' + t, url: episode.link };
         });
       })
       .catch(function(){ return []; });
@@ -617,7 +630,7 @@
       fetchLogoNews()
     ]).then(function(results){
       var items = results[0].concat(results[1]);
-      renderTicker(items.length ? items : ['Ticker gerade nicht erreichbar']);
+      renderTicker(items.length ? items : [{ text: 'Ticker gerade nicht erreichbar' }]);
     });
   }
 
@@ -736,8 +749,11 @@
 
   function renderTicker(items){
     var doubled = items.concat(items);
-    tickerTrackEl.innerHTML = doubled.map(function(n){
-      return '<span class="ticker-item">' + n + '</span>';
+    tickerTrackEl.innerHTML = doubled.map(function(it){
+      if(it.url){
+        return '<a class="ticker-item" href="' + it.url + '" target="_blank" rel="noopener noreferrer">' + it.text + '</a>';
+      }
+      return '<span class="ticker-item">' + it.text + '</span>';
     }).join('<span class="ticker-item" aria-hidden="true">·</span>');
   }
 
@@ -895,7 +911,7 @@
     else render();
   }, 30000);
 
-  renderTicker(["Lade Ticker-Daten …"]);
+  renderTicker([{ text: 'Lade Ticker-Daten …' }]);
   updateLiveTicker();
   setInterval(updateLiveTicker, 5 * 60 * 1000); // alle 5 Minuten aktualisieren
   renderEventCard();
