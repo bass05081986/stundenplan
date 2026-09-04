@@ -417,7 +417,7 @@
       btn.setAttribute('aria-label', DAYS[i] + ', ' + fmtDate(d));
       (function(delta){
         btn.addEventListener('click', function(){
-          offset = offset + delta;
+          offset = delta;
           render();
         });
       })(Math.round((d - today) / 86400000));
