@@ -556,14 +556,14 @@
   };
   function iconFor(name){ return ICONS[name] || "📅"; }
 
-  // Beispiel-Ticker — ersetze die Einträge durch deine eigenen
+  // Beispiel-Ticker — ersetze die Einträge durch deine eigenen (z.B. per RSS/API)
   var NEWS = [
-    "⚽ Bundesliga: dein Verein gewinnt 3:1",
-    "🎮 Neues Fortnite-Update mit frischen Skins",
+    "⚽ FC Bayern München — nächstes Bundesliga-Spiel",
+    "⚽ Arminia Bielefeld — aktueller Tabellenplatz",
+    "🎮 Neue Konsolenspiele diese Woche (PS5 / Switch / Xbox)",
     "🧱 Minecraft-Update bringt neues Biom",
     "🏆 Champions League: Achtelfinale ausgelost",
-    "🎥 Neues Video von deinem Lieblings-Creator",
-    "🕹️ Nintendo kündigt neues Spiel an"
+    "🎥 Neues Video von deinem Lieblings-Creator"
   ];
 
   function isoIndex(d){ return (d.getDay()+6)%7; } // 0=Mo .. 6=So
