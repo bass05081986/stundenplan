@@ -219,7 +219,7 @@
   }
   .slot{
     display:grid;
-    grid-template-columns:76px 4px 1fr;
+    grid-template-columns:30px 76px 4px 1fr;
     gap:0 14px;
     align-items:stretch;
     padding:13px 6px;
@@ -234,6 +234,16 @@
   }
   @media (prefers-reduced-motion: reduce){
     .slot{ animation:none; }
+  }
+
+  .slot-num{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:12px;
+    font-weight:600;
+    color:var(--flap-text-faint);
+    font-variant-numeric:tabular-nums;
+    align-self:center;
+    text-align:center;
   }
 
   .slot-time{
@@ -495,7 +505,7 @@
 
   @media (max-width:380px){
     .tab{ font-size:10.5px; padding:8px 0; }
-    .slot{ grid-template-columns:60px 3px 1fr; }
+    .slot{ grid-template-columns:22px 60px 3px 1fr; }
   }
 </style>
 </head>
@@ -568,47 +578,51 @@
     "Französisch":"#4A7FA5",
     "Schwimmen":"#52B3C4",
     "Biologie/Physik":"var(--c-physik)",
-    "Musik/Informatik":"var(--c-musik)"
+    "Musik/Informatik":"var(--c-musik)",
+    "Förder Deutsch":"var(--c-deutsch)",
+    "Förder Mathe":"var(--c-mathematik)",
+    "Förder Englisch":"var(--c-englisch)"
   };
 
   // Schulbeginn 7:50 · 45-Min-Stunden · 5 Min Pause zwischen den Stunden,
   // 15 Min nach Stunde 2, 20 Min nach Stunde 4, Mittagspause (50 Min) liegt auf Stunde 7.
+  // Felder: Start, Ende, Fach, Lehrer/Zusatz, Stundennummer(n)
   var SCHEDULE = [
     [ // Montag
-      ["07:50","08:35","FD","Weh"],
-      ["08:40","09:25","Religion","Kru"],
-      ["09:40","11:15","Deutsch",""],
-      ["11:35","13:10","Mathematik",""],
-      ["14:00","14:45","LAZ","Kru"]
+      ["07:50","08:35","Förder Deutsch","Weh","1"],
+      ["08:40","09:25","Religion","Kru","2"],
+      ["09:40","11:15","Deutsch","","3–4"],
+      ["11:35","13:10","Mathematik","","5–6"],
+      ["14:00","14:45","LAZ","Kru","8"]
     ],
     [ // Dienstag
-      ["07:50","09:25","Kunst",""],
-      ["09:40","10:25","Deutsch",""],
-      ["10:30","11:15","Englisch",""],
-      ["11:35","13:10","Geschichte","Engel"]
+      ["07:50","09:25","Kunst","","1–2"],
+      ["09:40","10:25","Deutsch","","3"],
+      ["10:30","11:15","Englisch","","4"],
+      ["11:35","13:10","Geschichte","Engel","5–6"]
     ],
     [ // Mittwoch
-      ["07:50","08:35","Biologie/Physik","Engel"],
-      ["08:40","09:25","Deutsch",""],
-      ["09:40","11:15","Englisch",""],
-      ["11:35","12:20","Mathematik",""],
-      ["12:25","13:10","Religion",""],
-      ["14:00","14:45","AG",""]
+      ["07:50","08:35","Biologie/Physik","Engel","1"],
+      ["08:40","09:25","Deutsch","","2"],
+      ["09:40","11:15","Englisch","","3–4"],
+      ["11:35","12:20","Mathematik","","5"],
+      ["12:25","13:10","Religion","","6"],
+      ["14:00","14:45","AG","","8"]
     ],
     [ // Donnerstag
-      ["07:50","08:35","Biologie/Physik",""],
-      ["08:40","09:25","Französisch","Fr. Wattenberg"],
-      ["09:40","11:15","Musik/Informatik","Herr Domin"],
-      ["11:35","13:10","Schwimmen",""],
-      ["14:00","14:45","KLS",""]
+      ["07:50","08:35","Biologie/Physik","","1"],
+      ["08:40","09:25","Französisch","Fr. Wattenberg","2"],
+      ["09:40","11:15","Musik/Informatik","Herr Domin","3–4"],
+      ["11:35","13:10","Schwimmen","","5–6"],
+      ["14:00","14:45","KLS","","8"]
     ],
     [ // Freitag
-      ["07:50","08:35","Englisch",""],
-      ["08:40","09:25","Sport",""],
-      ["09:40","10:25","Mathematik",""],
-      ["10:30","11:15","FM",""],
-      ["11:35","12:20","Französisch",""],
-      ["12:25","13:10","FE",""]
+      ["07:50","08:35","Englisch","","1"],
+      ["08:40","09:25","Sport","","2"],
+      ["09:40","10:25","Mathematik","","3"],
+      ["10:30","11:15","Förder Mathe","","4"],
+      ["11:35","12:20","Französisch","","5"],
+      ["12:25","13:10","Förder Englisch","","6"]
     ]
   ];
 
@@ -973,11 +987,16 @@
     var nowMin = isToday ? (new Date().getHours()*60 + new Date().getMinutes()) : -1;
 
     periods.forEach(function(p, i){
-      var start = p[0], end = p[1], subject = p[2], meta = p[3];
+      var start = p[0], end = p[1], subject = p[2], meta = p[3], num = p[4];
       var isNow = isToday && nowMin >= toMinutes(start) && nowMin < toMinutes(end);
 
       var row = document.createElement('div');
       row.className = 'slot' + (isNow ? ' is-now' : '');
+
+      var numEl = document.createElement('div');
+      numEl.className = 'slot-num';
+      numEl.textContent = num || '';
+      row.appendChild(numEl);
 
       var timeEl = document.createElement('div');
       timeEl.className = 'slot-time';
