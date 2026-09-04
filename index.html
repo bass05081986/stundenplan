@@ -1,3 +1,8 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Stundentafel</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -151,7 +156,7 @@
   .tabs{
     flex:1;
     display:grid;
-    grid-template-columns:repeat(7,1fr);
+    grid-template-columns:repeat(5,1fr);
     gap:4px;
   }
   .tab{
@@ -269,9 +274,38 @@
     vertical-align:1px;
   }
 
+  .break{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    padding:5px 6px;
+    font-family:'IBM Plex Mono',monospace;
+    font-size:10px;
+    letter-spacing:.1em;
+    text-transform:uppercase;
+    color:var(--flap-text-faint);
+  }
+  .break-line{
+    flex:1;
+    height:1px;
+    background:var(--rule);
+  }
+
   .empty{
-    padding:44px 20px 52px;
+    padding:40px 20px 48px;
     text-align:center;
+  }
+  .empty-eyebrow{
+    display:inline-block;
+    font-family:'IBM Plex Mono',monospace;
+    font-size:10.5px;
+    letter-spacing:.14em;
+    text-transform:uppercase;
+    color:var(--amber);
+    border:1px solid var(--amber-dim);
+    border-radius:3px;
+    padding:2px 8px;
+    margin-bottom:12px;
   }
   .empty-title{
     font-family:'IBM Plex Sans Condensed',sans-serif;
@@ -301,6 +335,8 @@
     .slot{ grid-template-columns:60px 3px 1fr; }
   }
 </style>
+</head>
+<body>
 
 <div class="frame">
   <div class="board">
@@ -377,12 +413,34 @@
       ["08:00","09:30","Physik","Raum 301 · Hr. Roth"],
       ["09:45","11:15","Informatik","Raum PC1 · Fr. Vogel"],
       ["11:30","12:15","Ethik","Raum 115 · Hr. Krause"]
-    ],
-    [], // Samstag
-    []  // Sonntag
+    ]
+  ];
+
+  // Gesetzliche Feiertage NRW 2026
+  var FEIERTAGE = [
+    ["2026-01-01","Neujahr"],
+    ["2026-04-03","Karfreitag"],
+    ["2026-04-06","Ostermontag"],
+    ["2026-05-01","Tag der Arbeit"],
+    ["2026-05-14","Christi Himmelfahrt"],
+    ["2026-05-25","Pfingstmontag"],
+    ["2026-06-04","Fronleichnam"],
+    ["2026-10-03","Tag der Deutschen Einheit"],
+    ["2026-11-01","Allerheiligen"],
+    ["2026-12-25","1. Weihnachtstag"],
+    ["2026-12-26","2. Weihnachtstag"]
+  ];
+
+  // Schulferien NRW 2026/2027
+  var FERIEN = [
+    ["Osterferien","2026-03-30","2026-04-11"],
+    ["Sommerferien","2026-07-20","2026-09-01"],
+    ["Herbstferien","2026-10-17","2026-10-31"],
+    ["Weihnachtsferien","2026-12-23","2027-01-06"]
   ];
 
   function isoIndex(d){ return (d.getDay()+6)%7; } // 0=Mo .. 6=So
+  function isWeekend(d){ return isoIndex(d) >= 5; }
   function addDays(d,n){ var r=new Date(d); r.setDate(r.getDate()+n); return r; }
   function sameDate(a,b){ return a.getFullYear()===b.getFullYear() && a.getMonth()===b.getMonth() && a.getDate()===b.getDate(); }
   function fmtDate(d){
@@ -390,9 +448,39 @@
   }
   function pad(n){ return n<10 ? '0'+n : ''+n; }
   function toMinutes(hhmm){ var p=hhmm.split(':'); return (+p[0])*60 + (+p[1]); }
+  function ymd(d){ return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate()); }
+  function parseYmd(s){ var p=s.split('-'); return new Date(+p[0], +p[1]-1, +p[2]); }
+
+  function findFeiertag(d){
+    var key = ymd(d);
+    for(var i=0;i<FEIERTAGE.length;i++){
+      if(FEIERTAGE[i][0] === key) return { name:FEIERTAGE[i][1] };
+    }
+    return null;
+  }
+  function findFerien(d){
+    var key = ymd(d);
+    for(var i=0;i<FERIEN.length;i++){
+      if(key >= FERIEN[i][1] && key <= FERIEN[i][2]) return { name:FERIEN[i][0], start:FERIEN[i][1], end:FERIEN[i][2] };
+    }
+    return null;
+  }
+
+  // Nächster Wochentag in Richtung dir (+1/-1), überspringt Sa/So
+  function shiftWeekday(d, dir){
+    var nd = addDays(d, dir);
+    while(isWeekend(nd)){ nd = addDays(nd, dir); }
+    return nd;
+  }
+  // Offset (in Tagen ab heute) des relevanten Tages: heute, oder falls Wochenende der nächste Montag
+  function defaultOffset(){
+    var d = today, days = 0;
+    while(isWeekend(d)){ d = addDays(d,1); days++; }
+    return days;
+  }
 
   var today = new Date();
-  var offset = 0; // days from today
+  var offset = defaultOffset(); // Tage ab heute
 
   var tabsEl = document.getElementById('tabs');
   var dayNameEl = document.getElementById('dayName');
@@ -405,12 +493,11 @@
   function buildTabs(viewDate){
     tabsEl.innerHTML = '';
     var weekStart = addDays(viewDate, -isoIndex(viewDate));
-    for(var i=0;i<7;i++){
+    for(var i=0;i<5;i++){
       var d = addDays(weekStart, i);
       var btn = document.createElement('button');
       btn.className = 'tab';
       btn.type = 'button';
-      if(i>=5) btn.classList.add('is-weekend');
       if(sameDate(d, today)) btn.classList.add('is-today');
       if(sameDate(d, viewDate)) btn.classList.add('is-active');
       btn.textContent = DAYS_SHORT[i];
@@ -433,20 +520,36 @@
     dayNameEl.textContent = DAYS[idx];
     dayDateEl.textContent = fmtDate(viewDate);
     todayTagEl.hidden = !isToday;
-    heuteBtn.hidden = isToday;
+    heuteBtn.hidden = (offset === defaultOffset());
 
     buildTabs(viewDate);
 
-    var periods = SCHEDULE[idx];
     agendaWrap.innerHTML = '';
 
-    if(!periods || periods.length === 0){
+    function renderEmpty(eyebrow, title, sub){
       var empty = document.createElement('div');
       empty.className = 'empty';
       empty.innerHTML =
-        '<div class="empty-title">Kein Unterricht</div>' +
-        '<div class="empty-sub">An diesem Tag stehen keine Stunden im Plan.</div>';
+        '<div class="empty-eyebrow">' + eyebrow + '</div>' +
+        '<div class="empty-title">' + title + '</div>' +
+        '<div class="empty-sub">' + sub + '</div>';
       agendaWrap.appendChild(empty);
+    }
+
+    var ferien = findFerien(viewDate);
+    if(ferien){
+      renderEmpty('Schulfrei', ferien.name, 'Bis einschließlich ' + fmtDate(parseYmd(ferien.end)) + ' · NRW');
+      return;
+    }
+    var feiertag = findFeiertag(viewDate);
+    if(feiertag){
+      renderEmpty('Schulfrei', feiertag.name, 'Gesetzlicher Feiertag in NRW');
+      return;
+    }
+
+    var periods = SCHEDULE[idx];
+    if(!periods || periods.length === 0){
+      renderEmpty('Frei', 'Kein Unterricht', 'An diesem Tag stehen keine Stunden im Plan.');
       return;
     }
 
@@ -454,7 +557,7 @@
     agenda.className = 'agenda';
     var nowMin = isToday ? (new Date().getHours()*60 + new Date().getMinutes()) : -1;
 
-    periods.forEach(function(p){
+    periods.forEach(function(p, i){
       var start = p[0], end = p[1], subject = p[2], meta = p[3];
       var isNow = isToday && nowMin >= toMinutes(start) && nowMin < toMinutes(end);
 
@@ -490,14 +593,41 @@
       row.appendChild(bar);
       row.appendChild(body);
       agenda.appendChild(row);
+
+      var next = periods[i+1];
+      if(next){
+        var gap = toMinutes(next[0]) - toMinutes(end);
+        if(gap > 0){
+          var brk = document.createElement('div');
+          brk.className = 'break';
+          var l1 = document.createElement('span');
+          l1.className = 'break-line';
+          var l2 = document.createElement('span');
+          l2.className = 'break-line';
+          var label = document.createElement('span');
+          label.textContent = gap + ' Min Pause';
+          brk.appendChild(l1);
+          brk.appendChild(label);
+          brk.appendChild(l2);
+          agenda.appendChild(brk);
+        }
+      }
     });
 
     agendaWrap.appendChild(agenda);
   }
 
-  document.getElementById('prevBtn').addEventListener('click', function(){ offset--; render(); });
-  document.getElementById('nextBtn').addEventListener('click', function(){ offset++; render(); });
-  heuteBtn.addEventListener('click', function(){ offset = 0; render(); });
+  document.getElementById('prevBtn').addEventListener('click', function(){
+    var d = shiftWeekday(addDays(today, offset), -1);
+    offset = Math.round((d - today) / 86400000);
+    render();
+  });
+  document.getElementById('nextBtn').addEventListener('click', function(){
+    var d = shiftWeekday(addDays(today, offset), 1);
+    offset = Math.round((d - today) / 86400000);
+    render();
+  });
+  heuteBtn.addEventListener('click', function(){ offset = defaultOffset(); render(); });
 
   function tickClock(){
     var n = new Date();
@@ -516,3 +646,5 @@
   render();
 })();
 </script>
+</body>
+</html>
